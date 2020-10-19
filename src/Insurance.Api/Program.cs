@@ -20,7 +20,17 @@ namespace Insurance.Api
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.UseStartup<Startup>();
+                    webBuilder
+                        .UseStartup<Startup>()
+                        .ConfigureAppConfiguration((context, builder) =>
+                        {
+                            var env = context.HostingEnvironment;
+
+                            builder.AddJsonFile("appsettings.json", false, true)
+                                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true)
+                                .AddJsonFile("productApiSettings.json", false, true)
+                                .AddEnvironmentVariables();
+                        });
                 });
     }
 }

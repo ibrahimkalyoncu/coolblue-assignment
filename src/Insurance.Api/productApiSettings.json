@@ -1,0 +1,5 @@
+{
+  "ProductApiConfiguration": {
+    "BaseAddress" : "http://localhost:5002"
+  }
+}
