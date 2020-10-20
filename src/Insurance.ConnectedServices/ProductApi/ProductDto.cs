@@ -2,7 +2,7 @@
 {
     public class ProductDto
     {
-        public ProductDto(int id, string name, double salesPrice, int productTypeId)
+        public ProductDto(int id, string name, decimal salesPrice, int productTypeId)
         {
             Id = id;
             Name = name;
@@ -12,7 +12,7 @@
         
         public int Id { get; }
         public string Name { get; }
-        public double SalesPrice { get; }
+        public decimal SalesPrice { get; }
         public int ProductTypeId { get; }
     }
 }

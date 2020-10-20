@@ -1,53 +1,38 @@
+using System;
 using System.Net;
 using System.Net.Http;
-using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Insurance.Api.Models;
+using Insurance.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Insurance.Api.Controllers
 {
     public class HomeController: Controller
     {
+        private readonly IInsuranceCalculatorService _insuranceCalculatorService;
+
+        public HomeController(IInsuranceCalculatorService insuranceCalculatorService)
+        {
+            _insuranceCalculatorService = insuranceCalculatorService;
+        }
+        
+        [Obsolete("This endpoint is absolute and will be removed and next major release. Instead please use the GET version of this endpoint")]
         [HttpPost]
         [Route("api/insurance/product")]
-        public InsuranceDto CalculateInsurance([FromBody] InsuranceDto toInsure)
+        public async Task<InsuranceDto> CalculateProductInsurance([FromBody] InsuranceDto toInsure)
         {
             int productId = toInsure.ProductId;
-
-            BusinessRules.GetProductType(ProductApi, productId, ref toInsure);
-            BusinessRules.GetSalesPrice(ProductApi, productId, ref toInsure);
-
-            float insurance = 0f;
-
-            if (toInsure.SalesPrice < 500)
-                toInsure.InsuranceValue = 0;
-            else
-            {
-                if (toInsure.SalesPrice > 500 && toInsure.SalesPrice < 2000)
-                    if (toInsure.ProductTypeHasInsurance)
-                        toInsure.InsuranceValue += 1000;
-                if (toInsure.SalesPrice >= 2000)
-                    if (toInsure.ProductTypeHasInsurance)
-                        toInsure.InsuranceValue += 2000;
-            }
-            
-            if (toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones" && toInsure.ProductTypeHasInsurance)
-                toInsure.InsuranceValue += 500;
-
+            toInsure.InsuranceValue = (float)await _insuranceCalculatorService.CalculateProductInsuranceAsync(productId);
             return toInsure;
         }
 
-        public class InsuranceDto
+        [HttpGet]
+        [Route("api/insurance/product/{productId}")]
+        public async Task<InsuranceCostDto> CalculateProductInsurance([FromRoute] int productId)
         {
-            public int ProductId { get; set; }
-            public float InsuranceValue { get; set; }
-            [JsonIgnore]
-            public string ProductTypeName { get; set; }
-            [JsonIgnore]
-            public bool ProductTypeHasInsurance { get; set; }
-            [JsonIgnore]
-            public float SalesPrice { get; set; }
+            var insuranceCost = await _insuranceCalculatorService.CalculateProductInsuranceAsync(productId);
+            return new InsuranceCostDto(insuranceCost);
         }
-
-        private const string ProductApi = "http://localhost:5002";
     }
 }

@@ -7,12 +7,6 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0-rc.2.20475.5" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0-rc.2.20475.5" />
-      <PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0-rc.2.20475.5" />
-      <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Insurance.Extensions\Insurance.Extensions.csproj" />
     </ItemGroup>
 
 </Project>

@@ -10,5 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Insurance.ConnectedServices\Insurance.ConnectedServices.csproj" />
+    <ProjectReference Include="..\Insurance.Services\Insurance.Services.csproj" />
   </ItemGroup>
 </Project>

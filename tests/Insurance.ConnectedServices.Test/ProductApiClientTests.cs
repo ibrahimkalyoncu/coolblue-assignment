@@ -45,7 +45,7 @@ namespace Insurance.ConnectedServices.Test
             //Assert
             product.Id.Should().Be(1);
             product.Name.Should().Be("Test Product 1");
-            product.SalesPrice.Should().Be(250D);
+            product.SalesPrice.Should().Be(250M);
             product.ProductTypeId.Should().Be(1);
         }
         
