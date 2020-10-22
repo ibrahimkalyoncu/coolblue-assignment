@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Insurance.Core.Exceptions;
 using Newtonsoft.Json;
 
 namespace Insurance.ConnectedServices.ProductApi
@@ -22,6 +24,10 @@ namespace Insurance.ConnectedServices.ProductApi
         public async Task<ProductDto> GetProductByIdAsync(int productId)
         {
             var response = await _client.GetAsync(string.Format(GetProductByIdPath, productId));
+            
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                throw new KnownException(404, $"Product not found. Id : {productId}");
+            
             response.EnsureSuccessStatusCode();
             return JsonConvert.DeserializeObject<ProductDto>(await response.Content.ReadAsStringAsync());
         }
@@ -29,7 +35,12 @@ namespace Insurance.ConnectedServices.ProductApi
         public async Task<ProductTypeDto> GetProductTypeByIdAsync(int productTypeId)
         {
             var response = await _client.GetAsync(string.Format(GetProductTypeByIdPath, productTypeId));
+            
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                throw new KnownException(404, $"Product type not found. Id : {productTypeId}");
+            
             response.EnsureSuccessStatusCode();
-            return JsonConvert.DeserializeObject<ProductTypeDto>(await response.Content.ReadAsStringAsync());        }
+            return JsonConvert.DeserializeObject<ProductTypeDto>(await response.Content.ReadAsStringAsync());        
+        }
     }
 }

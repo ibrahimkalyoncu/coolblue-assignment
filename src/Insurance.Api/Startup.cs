@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Insurance.ConnectedServices;
+using Insurance.Core.Exceptions;
 using Insurance.Data;
 using Insurance.Services;
 
@@ -26,6 +27,7 @@ namespace Insurance.Api
             services.AddDbContext(Configuration.GetConnectionString("InsuranceDbContext"));
             services.AddBusinessServices();
             services.AddControllers();
+            services.AddSwaggerGen();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -35,6 +37,17 @@ namespace Insurance.Api
             {
                 app.UseDeveloperExceptionPage();
             }
+            else
+            {
+                app.ConfigureExceptionHandler();
+            }
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Insurance API V1");
+            });
+
 
             app.UseHttpsRedirection();
 

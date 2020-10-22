@@ -13,7 +13,7 @@ namespace Insurance.ConnectedServices.Test
     [TestFixture]
     public class ProductApiClientTests
     {
-        private ProductApiClient _client;
+        private ProductApiClient _sut;
         private MockHttpMessageHandler _httpMessageHandlerMock;
 
         [SetUp]
@@ -27,7 +27,7 @@ namespace Insurance.ConnectedServices.Test
             var httpClientFactoryMock = new Mock<IHttpClientFactory>();
             httpClientFactoryMock.Setup(factory => factory.CreateClient(It.IsAny<string>())).Returns(_httpMessageHandlerMock.ToHttpClient());
 
-            _client = new ProductApiClient(httpClientFactoryMock.Object, productApiConfigurationMock.Object);
+            _sut = new ProductApiClient(httpClientFactoryMock.Object, productApiConfigurationMock.Object);
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace Insurance.ConnectedServices.Test
                     "{'id' : 1, 'name' : 'Test Product 1', 'salesPrice' : 250, 'productTypeId' : 1}");
 
             //Act
-            var product = await _client.GetProductByIdAsync(1);
+            var product = await _sut.GetProductByIdAsync(1);
             
             //Assert
             product.Id.Should().Be(1);
@@ -58,7 +58,7 @@ namespace Insurance.ConnectedServices.Test
                 .Respond(HttpStatusCode.NotFound);
             
             //Act
-            Func<Task> f = async () => { await _client.GetProductByIdAsync(1); };
+            Func<Task> f = async () => { await _sut.GetProductByIdAsync(1); };
 
             //Assert
             f.Should().Throw<Exception>();
@@ -74,7 +74,7 @@ namespace Insurance.ConnectedServices.Test
                     "{'id' : 1, 'name' : 'Test Product Type 1', 'canBeInsured' : true}");
             
             //Act
-            var productType = await _client.GetProductTypeByIdAsync(1);
+            var productType = await _sut.GetProductTypeByIdAsync(1);
 
             //Assert
             productType.Id.Should().Be(1);
@@ -91,7 +91,7 @@ namespace Insurance.ConnectedServices.Test
                 .Respond(HttpStatusCode.NotFound);
             
             //Act
-            Func<Task> f = async () => { await _client.GetProductByIdAsync(1); };
+            Func<Task> f = async () => { await _sut.GetProductByIdAsync(1); };
 
             //Assert
             f.Should().Throw<Exception>();

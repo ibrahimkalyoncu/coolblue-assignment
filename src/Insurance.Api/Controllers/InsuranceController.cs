@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Insurance.Api.Controllers
 {
+    [ApiController]
     [Route("api/[controller]")]
     public class InsuranceController: Controller
     {
@@ -28,6 +29,7 @@ namespace Insurance.Api.Controllers
 
         [HttpGet]
         [Route("product/{productId}")]
+        [ProducesResponseType(500)]
         public async Task<InsuranceCostDto> CalculateProductInsurance([FromRoute] int productId)
         {
             var insuranceCost = await _insuranceCalculatorService.CalculateProductInsuranceAsync(productId);
