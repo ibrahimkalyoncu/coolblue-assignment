@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Insurance.ConnectedServices.ProductApi;
 using Insurance.Data;
-using Insurance.Data.Entity;
+using Insurance.Data.Database.SqlServer;
+using Insurance.Data.Domain;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;
 
@@ -15,15 +17,17 @@ namespace Insurance.Services.Test
     {
         private InsuranceCalculatorService _sut;
         private Mock<IProductApiClient> _productApiMock;
-        private Mock<IInsuranceRuleRepository> _insuranceRuleRepository;
 
         [SetUp]
         public void Setup()
         {
-            _productApiMock = new Mock<IProductApiClient>();
-            _insuranceRuleRepository = new Mock<IInsuranceRuleRepository>();
-            _sut = new InsuranceCalculatorService(_productApiMock.Object, _insuranceRuleRepository.Object);
+            var options = new DbContextOptionsBuilder<InsuranceDbContext>()
+                .UseInMemoryDatabase(nameof(InsuranceDbContext))
+                .Options;
 
+            _productApiMock = new Mock<IProductApiClient>();
+            var insuranceDbContext = new InsuranceDbContext(options);
+            
             var rangeRulesTestData = new List<InsuranceRangeRule>
             {
                 new InsuranceRangeRule { InclusiveMinSalePrice = 500, ExclusiveMaxSalePrice = 2000, InsuranceCost = 1000 },
@@ -36,8 +40,11 @@ namespace Insurance.Services.Test
                 new InsuranceProductTypeRule { ProductTypeId = 2000, InsuranceCost = 1000, Type = InsuranceProductTypeRuleType.AppliesToOrder }
             };
             
-            _insuranceRuleRepository.Setup(insuranceRuleRepository => insuranceRuleRepository.GetInsuranceSalePriceRangeRules()).Returns(rangeRulesTestData.AsQueryable());
-            _insuranceRuleRepository.Setup(insuranceRuleRepository => insuranceRuleRepository.GetInsuranceProductTypeRules()).Returns(productTypeRulesTestData.AsQueryable());
+            insuranceDbContext.InsuranceRangeRules.AddRange(rangeRulesTestData);
+            insuranceDbContext.InsuranceProductTypeRules.AddRange(productTypeRulesTestData);
+            insuranceDbContext.SaveChanges();
+            
+            _sut = new InsuranceCalculatorService(_productApiMock.Object, insuranceDbContext);
         }
 
         [Test]

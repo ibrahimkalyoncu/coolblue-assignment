@@ -23,7 +23,7 @@ namespace Insurance.Api
         {
             services.AddHttpClient();
             services.AddConnectedServices(Configuration);
-            services.AddRepositories();
+            services.AddDbContext(Configuration.GetConnectionString("InsuranceDbContext"));
             services.AddBusinessServices();
             services.AddControllers();
         }

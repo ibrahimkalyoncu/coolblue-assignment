@@ -1,23 +1,22 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Insurance.ConnectedServices.ProductApi;
-using Insurance.Data;
-using Insurance.Data.Entity;
+using Insurance.Data.Database.SqlServer;
+using Insurance.Data.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Insurance.Services
 {
     public class InsuranceCalculatorService : IInsuranceCalculatorService
     {
         private readonly IProductApiClient _productApiClient;
-        private readonly IInsuranceRuleRepository _insuranceRuleRepository;
+        private readonly InsuranceDbContext _dbContext;
 
         public InsuranceCalculatorService(
             IProductApiClient productApiClient,
-            IInsuranceRuleRepository insuranceRuleRepository)
+            InsuranceDbContext dbContext)
         {
             _productApiClient = productApiClient;
-            _insuranceRuleRepository = insuranceRuleRepository;
+            _dbContext = dbContext;
         }
         
         public async Task<decimal> CalculateProductInsuranceAsync(int productId)
@@ -30,13 +29,13 @@ namespace Insurance.Services
 
             var insuranceCost = 0M;
 
-            var insuranceRangeRule = _insuranceRuleRepository
-                .GetInsuranceSalePriceRangeRules()
-                .FirstOrDefault(rule => rule.InclusiveMinSalePrice <= product.SalesPrice && rule.ExclusiveMaxSalePrice > product.SalesPrice);
+            var insuranceRangeRule = await _dbContext
+                .InsuranceRangeRules
+                .FirstOrDefaultAsync(rule => rule.InclusiveMinSalePrice <= product.SalesPrice && rule.ExclusiveMaxSalePrice > product.SalesPrice);
 
-            var insuranceProductTypeRule = _insuranceRuleRepository
-                .GetInsuranceProductTypeRules()
-                .FirstOrDefault(rule => rule.ProductTypeId == productType.Id && rule.Type == InsuranceProductTypeRuleType.AppliesToProduct);
+            var insuranceProductTypeRule = await _dbContext
+                .InsuranceProductTypeRules
+                .FirstOrDefaultAsync(rule => rule.ProductTypeId == productType.Id && rule.Type == InsuranceProductTypeRuleType.AppliesToProduct);
 
             if (insuranceRangeRule != null)
                 insuranceCost += insuranceRangeRule.InsuranceCost;

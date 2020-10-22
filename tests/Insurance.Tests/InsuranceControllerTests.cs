@@ -12,13 +12,13 @@ namespace Insurance.Tests
     public class InsuranceControllerTests
     {
         private Mock<IInsuranceCalculatorService> _insuranceCalculatorServiceMock;
-        private HomeController _sut;
+        private InsuranceController _sut;
 
         [SetUp]
         public void Setup()
         {
             _insuranceCalculatorServiceMock = new Mock<IInsuranceCalculatorService>();
-            _sut = new HomeController(_insuranceCalculatorServiceMock.Object);
+            _sut = new InsuranceController(_insuranceCalculatorServiceMock.Object);
         }
 
         [Test]

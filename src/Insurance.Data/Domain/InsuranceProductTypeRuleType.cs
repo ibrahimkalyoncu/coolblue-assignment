@@ -1,5 +1,5 @@
 ﻿
-namespace Insurance.Data.Entity
+namespace Insurance.Data.Domain
 {
     public enum InsuranceProductTypeRuleType
     {
