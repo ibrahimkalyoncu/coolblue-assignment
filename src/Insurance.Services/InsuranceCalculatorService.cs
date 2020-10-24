@@ -1,7 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using Insurance.ConnectedServices.ProductApi;
 using Insurance.Data.Database.SqlServer;
 using Insurance.Data.Domain;
+using Insurance.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Insurance.Services
@@ -31,10 +33,12 @@ namespace Insurance.Services
 
             var insuranceRangeRule = await _dbContext
                 .InsuranceRangeRules
+                .AsNoTracking()
                 .FirstOrDefaultAsync(rule => rule.InclusiveMinSalePrice <= product.SalesPrice && rule.ExclusiveMaxSalePrice > product.SalesPrice);
 
             var insuranceProductTypeRule = await _dbContext
                 .InsuranceProductTypeRules
+                .AsNoTracking()
                 .FirstOrDefaultAsync(rule => rule.ProductTypeId == productType.Id && rule.Type == InsuranceProductTypeRuleType.AppliesToProduct);
 
             if (insuranceRangeRule != null)
@@ -44,6 +48,81 @@ namespace Insurance.Services
                 insuranceCost += insuranceProductTypeRule.InsuranceCost;
 
             return insuranceCost;
+        }
+
+        public async Task<decimal> CalculateOrderInsuranceAsync(OrderDto order)
+        {
+            var productDataTasks = order
+                .Items
+                .Select(item => item.ProductId)
+                .Distinct()
+                .Select(productId => _productApiClient.GetProductByIdAsync(productId))
+                .ToList();
+
+            await Task.WhenAll(productDataTasks);
+
+            var productTypeTasks = productDataTasks
+                .Select(task => task.Result.ProductTypeId)
+                .Distinct()
+                .Select(productTypeId => _productApiClient.GetProductTypeByIdAsync(productTypeId))
+                .ToList();
+
+            await Task.WhenAll(productTypeTasks);
+
+            var rangeRules = await _dbContext
+                .InsuranceRangeRules
+                .AsNoTracking()
+                .ToListAsync();
+
+            var productTypeRules = await _dbContext
+                .InsuranceProductTypeRules
+                .AsNoTracking()
+                .ToListAsync();
+
+            var productDataDictionary = productDataTasks
+                .ToDictionary(task => task.Result.Id, task => task.Result);
+
+            var productTypeDictionary = productTypeTasks
+                .ToDictionary(task => task.Result.Id, task => task.Result);
+            
+            var insuranceCost = order
+                .Items
+                .Sum(CalculateOrderItemInsurance);
+            
+            return insuranceCost;
+            
+            decimal CalculateOrderItemInsurance(OrderItemDto item)
+            {
+                var product = productDataDictionary[item.ProductId];
+                var productType = productTypeDictionary[product.ProductTypeId];
+
+                if (!productType.CanBeInsured)
+                    return 0;
+
+                var singleItemInsuranceCost = 0M;
+                
+                var insuranceRangeRule = rangeRules
+                    .FirstOrDefault(rule => rule.InclusiveMinSalePrice <= product.SalesPrice && rule.ExclusiveMaxSalePrice > product.SalesPrice);
+
+                var insuranceProductTypeOnProductRule = productTypeRules
+                    .SingleOrDefault(rule => rule.ProductTypeId == productType.Id && rule.Type == InsuranceProductTypeRuleType.AppliesToProduct);
+
+                var insuranceProductTypeOnOrderRule = productTypeRules
+                    .SingleOrDefault(rule => rule.ProductTypeId == productType.Id && rule.Type == InsuranceProductTypeRuleType.AppliesToOrder);
+
+                if (insuranceRangeRule != null)
+                    singleItemInsuranceCost += insuranceRangeRule.InsuranceCost;
+
+                if (insuranceProductTypeOnProductRule != null)
+                    singleItemInsuranceCost += insuranceProductTypeOnProductRule.InsuranceCost;
+
+                var totalInsuranceCost = singleItemInsuranceCost * item.Quantity;
+                
+                if (insuranceProductTypeOnOrderRule != null)
+                    totalInsuranceCost += insuranceProductTypeOnOrderRule.InsuranceCost;
+
+                return totalInsuranceCost;
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
-using Insurance.Api.Models;
+using Insurance.Domain.Models;
 using Insurance.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,11 +30,19 @@ namespace Insurance.Api.Controllers
 
         [HttpGet]
         [Route("product/{productId}")]
-        [ProducesResponseType(500)]
-        public async Task<InsuranceCostDto> CalculateProductInsurance([FromRoute] int productId)
+        [ProducesResponseType(404)]
+        public async Task<InsuranceCostDto> CalculateProductInsurance([Range(1,int.MaxValue)][FromRoute] int productId)
         {
             var insuranceCost = await _insuranceCalculatorService.CalculateProductInsuranceAsync(productId);
             return new InsuranceCostDto(insuranceCost);
+        }
+
+        [HttpPost]
+        [Route("order")]
+        public async Task<InsuranceCostDto> CalculateOrderInsurance([FromBody]OrderDto orderDto)
+        {
+            var insuranceCost = await _insuranceCalculatorService.CalculateOrderInsuranceAsync(orderDto);
+            return new InsuranceCostDto(insuranceCost);        
         }
     }
 }

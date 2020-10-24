@@ -41,3 +41,36 @@ It looks like the already implemented functionality has some quality issues. Ref
 - Converted hardcoded insurance logic into a configurable data.
 - Implemented an insurance calculator based on the new configurable data. Easy to test now. 
 - Replaced the usage of existing code with new approach.
+
+## Task 3 [FEATURE 1]:
+
+##### Requirement : 
+
+Now we want to calculate the insurance cost for an order and for this, we are going to provide all the products that are in a shopping cart.
+
+##### Solution :
+
+This is similar to product, but this time there may be many products and also quantity is an other parameter effects the insurance cost.
+
+I implemented a new endpoint having a simple order model with product id and quantity for each order item. Then calculated the cost based on the rules.
+
+## Task 3 [FEATURE 2]:
+
+##### Requirement : 
+
+We want to change the logic around the insurance calculation. We received a report from our business analysts that Drones are getting lost more than usual. Therefore, if an order has one or more drones, add € 500 to the insured value of the order.
+
+##### Solution :
+
+This is so similar to the Laptop and Smartphones requirement but this time applied once in an order and not included in product insurance cost. 
+
+So basically we have 2 types of insurance rules;
+- By price range
+- By product type
+
+Also, for the by product type rules, we have two different sub type
+- Applies to product
+- Applies to order
+
+With these assumptions I extended the generic solution to cover all these cases.  
+

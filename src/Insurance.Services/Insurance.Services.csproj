@@ -7,6 +7,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Insurance.ConnectedServices\Insurance.ConnectedServices.csproj" />
       <ProjectReference Include="..\Insurance.Data\Insurance.Data.csproj" />
+      <ProjectReference Include="..\Insurance.Domain\Insurance.Domain.csproj" />
     </ItemGroup>
 
 </Project>

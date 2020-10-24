@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using FluentAssertions;
 using Insurance.Api.Controllers;
-using Insurance.Api.Models;
+using Insurance.Domain.Models;
 using Insurance.Services;
 using Moq;
 using NUnit.Framework;
@@ -50,6 +50,23 @@ namespace Insurance.Tests
             
             //Act
             var result = await _sut.CalculateProductInsurance(1);
+            
+            //Assert
+            result.InsuranceCost.Should().Be(expectedCost);
+        }
+        
+        [Test]
+        public async Task CalculateOrderInsurance_GivenAnOrder_WhenCalculatorReturnsAResult_ThenShouldReturnInsuranceCost()
+        {
+            //Arrange
+            const decimal expectedCost = 1000M;
+            
+            _insuranceCalculatorServiceMock
+                .Setup(insuranceCalculatorService => insuranceCalculatorService.CalculateOrderInsuranceAsync(It.IsAny<OrderDto>()))
+                .ReturnsAsync(expectedCost);
+            
+            //Act
+            var result = await _sut.CalculateOrderInsurance(new OrderDto(null));
             
             //Assert
             result.InsuranceCost.Should().Be(expectedCost);

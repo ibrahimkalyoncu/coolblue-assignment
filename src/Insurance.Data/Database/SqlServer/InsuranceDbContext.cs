@@ -1,4 +1,5 @@
-﻿using Insurance.Data.Domain;
+﻿using System.Reflection;
+using Insurance.Data.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Insurance.Data.Database.SqlServer
@@ -10,5 +11,11 @@ namespace Insurance.Data.Database.SqlServer
 
         public DbSet<InsuranceRangeRule> InsuranceRangeRules { get; set; }
         public DbSet<InsuranceProductTypeRule> InsuranceProductTypeRules { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        }
     }
 }

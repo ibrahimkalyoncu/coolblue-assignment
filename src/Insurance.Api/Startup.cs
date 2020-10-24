@@ -1,3 +1,4 @@
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Insurance.ConnectedServices;
 using Insurance.Core.Exceptions;
 using Insurance.Data;
+using Insurance.Domain.Validators;
 using Insurance.Services;
 
 namespace Insurance.Api
@@ -26,7 +28,15 @@ namespace Insurance.Api
             services.AddConnectedServices(Configuration);
             services.AddDbContext(Configuration.GetConnectionString("InsuranceDbContext"));
             services.AddBusinessServices();
-            services.AddControllers();
+            
+            services.AddControllers()
+                .AddNewtonsoftJson()
+                .AddFluentValidation(o =>
+                {
+                    o.RegisterValidatorsFromAssemblyContaining<OrderDtoValidator>();
+                    o.ImplicitlyValidateChildProperties = true;
+                });
+            
             services.AddSwaggerGen();
         }
 

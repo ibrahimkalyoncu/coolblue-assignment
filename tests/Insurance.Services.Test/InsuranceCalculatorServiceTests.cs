@@ -1,11 +1,10 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Insurance.ConnectedServices.ProductApi;
-using Insurance.Data;
 using Insurance.Data.Database.SqlServer;
 using Insurance.Data.Domain;
+using Insurance.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;
@@ -112,11 +111,98 @@ namespace Insurance.Services.Test
         {
             //Arrange
             const decimal expectedInsuranceCost = 2500;
-            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(1)).ReturnsAsync(new ProductDto(1, default, 2000, 1000));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(1)).ReturnsAsync(new ProductDto(1, default, 3000, 1000));
             _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(1000)).ReturnsAsync(new ProductTypeDto(1000, default, true));
                 
             //Act
             decimal insuranceCost = await _sut.CalculateProductInsuranceAsync(1);
+
+            //Assert
+            insuranceCost.Should().Be(expectedInsuranceCost);
+        }
+        
+        [Test]
+        public async Task CalculateOrderInsurance_GivenProductIds_WhenNoProductCanBeInsured_ThenShouldCalculateInsuranceAsZero()
+        {
+            //Arrange
+            const decimal expectedInsuranceCost = 0;
+            
+            var orderDto = new OrderDto(new List<OrderItemDto>
+            {
+                new OrderItemDto(1,1),
+                new OrderItemDto(2,2),
+                new OrderItemDto(3,3)
+            });    
+            
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(1)).ReturnsAsync(new ProductDto(1, default, 500, 1));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(2)).ReturnsAsync(new ProductDto(2, default, 2000, 2));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(3)).ReturnsAsync(new ProductDto(3, default, 3000, 3));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(1)).ReturnsAsync(new ProductTypeDto(1, default, false));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(2)).ReturnsAsync(new ProductTypeDto(2, default, false));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(3)).ReturnsAsync(new ProductTypeDto(3, default, false));
+            
+            //Act
+            decimal insuranceCost = await _sut.CalculateOrderInsuranceAsync(orderDto);
+
+            //Assert
+            insuranceCost.Should().Be(expectedInsuranceCost);
+        }   
+        
+        [Test]
+        public async Task CalculateOrderInsurance_GivenProductIds_WhenSomeProductsCanBeInsured_ThenShouldCalculateInsurance()
+        {
+            //Arrange
+            const decimal expectedInsuranceCost = 1000;
+            
+            var orderDto = new OrderDto(new List<OrderItemDto>
+            {
+                new OrderItemDto(1,1),
+                new OrderItemDto(2,2),
+                new OrderItemDto(3,3)
+            });    
+            
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(1)).ReturnsAsync(new ProductDto(1, default, 500, 1));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(2)).ReturnsAsync(new ProductDto(2, default, 1000, 2));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(3)).ReturnsAsync(new ProductDto(3, default, 2000, 3));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(1)).ReturnsAsync(new ProductTypeDto(1, default, true));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(2)).ReturnsAsync(new ProductTypeDto(2, default, false));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(3)).ReturnsAsync(new ProductTypeDto(3, default, false));
+            
+            //Act
+            decimal insuranceCost = await _sut.CalculateOrderInsuranceAsync(orderDto);
+
+            //Assert
+            insuranceCost.Should().Be(expectedInsuranceCost);
+        }
+        
+        [Test]
+        public async Task CalculateOrderInsurance_GivenProductIds_WhenAllProductsCanBeInsured_ThenShouldCalculateInsurance()
+        {
+           //Arrange
+            const decimal expectedInsuranceCost = 23000;
+            
+            var orderDto = new OrderDto(new List<OrderItemDto>
+            {
+                new OrderItemDto(1,1),
+                new OrderItemDto(2,2),
+                new OrderItemDto(3,3),
+                new OrderItemDto(4,4),
+                new OrderItemDto(5,5),
+            });    
+            
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(1)).ReturnsAsync(new ProductDto(1, default, 499, 1)); //0 x 1
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(2)).ReturnsAsync(new ProductDto(2, default, 500, 2)); //1000 x 2
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(3)).ReturnsAsync(new ProductDto(3, default, 1999, 3)); //1000 x 3
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(4)).ReturnsAsync(new ProductDto(4, default, 2000, 4)); //2000 x 4
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductByIdAsync(5)).ReturnsAsync(new ProductDto(5, default, 3000, 5)); //2000 x 5
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(1)).ReturnsAsync(new ProductTypeDto(1, default, true));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(2)).ReturnsAsync(new ProductTypeDto(2, default, true));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(3)).ReturnsAsync(new ProductTypeDto(3, default, true));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(4)).ReturnsAsync(new ProductTypeDto(4, default, true));
+            _productApiMock.Setup(productApiClient => productApiClient.GetProductTypeByIdAsync(5)).ReturnsAsync(new ProductTypeDto(5, default, true));
+            
+            //Act
+            decimal insuranceCost = await _sut.CalculateOrderInsuranceAsync(orderDto);
 
             //Assert
             insuranceCost.Should().Be(expectedInsuranceCost);
