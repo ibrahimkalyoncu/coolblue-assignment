@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Insurance.ConnectedServices.ProductApi;
 using Insurance.Data.Database.SqlServer;
 using Insurance.Data.Domain;
+using Insurance.Domain;
 using Insurance.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,9 +51,9 @@ namespace Insurance.Services
             return insuranceCost;
         }
 
-        public async Task<decimal> CalculateOrderInsuranceAsync(OrderDto order)
+        public async Task<decimal> CalculateOrderInsuranceAsync(CalculateOrderInsuranceRequest request)
         {
-            var productDataTasks = order
+            var productDataTasks = request
                 .Items
                 .Select(item => item.ProductId)
                 .Distinct()
@@ -85,7 +86,7 @@ namespace Insurance.Services
             var productTypeDictionary = productTypeTasks
                 .ToDictionary(task => task.Result.Id, task => task.Result);
             
-            var insuranceCost = order
+            var insuranceCost = request
                 .Items
                 .Sum(CalculateOrderItemInsurance);
             
@@ -123,6 +124,36 @@ namespace Insurance.Services
 
                 return totalInsuranceCost;
             }
+        }
+
+        //Works as upsert. This partially handles conflicts but still there is a small chance of race condition  
+        //Using some locks over the transaction (like isolation level serializable) is also possible
+        //but may have side effects while reading the data being updating.
+        //I think, letting back office throw ex better than affecting the insurance calculation performance as it affects customer experience
+        public async Task SaveSurchargeRateAsync(SaveSurchargeRateRequest request)
+        {
+            var existingRule = await _dbContext
+                .InsuranceProductTypeRules
+                .FirstOrDefaultAsync(rule => rule.Type == InsuranceProductTypeRuleType.AppliesToProduct 
+                                             && rule.ProductTypeId == request.ProductTypeId);
+
+            if (existingRule != null)
+            {
+                existingRule.InsuranceCost = request.InsuranceCost;
+            }
+            else
+            {
+                _dbContext
+                    .InsuranceProductTypeRules
+                    .Add(new InsuranceProductTypeRule
+                    {
+                        Type = InsuranceProductTypeRuleType.AppliesToProduct,
+                        InsuranceCost = request.InsuranceCost,
+                        ProductTypeId = request.ProductTypeId
+                    });
+            }
+
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

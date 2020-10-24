@@ -4,7 +4,7 @@ using Insurance.Domain.Models;
 
 namespace Insurance.Domain.Validators
 {
-    public class OrderDtoValidator : AbstractValidator<OrderDto>
+    public class OrderDtoValidator : AbstractValidator<CalculateOrderInsuranceRequest>
     {
         public OrderDtoValidator()
         {

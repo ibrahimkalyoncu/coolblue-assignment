@@ -4,6 +4,7 @@ using FluentAssertions;
 using Insurance.ConnectedServices.ProductApi;
 using Insurance.Data.Database.SqlServer;
 using Insurance.Data.Domain;
+using Insurance.Domain;
 using Insurance.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -16,6 +17,7 @@ namespace Insurance.Services.Test
     {
         private InsuranceCalculatorService _sut;
         private Mock<IProductApiClient> _productApiMock;
+        private InsuranceDbContext _insuranceDbContext;
 
         [SetUp]
         public void Setup()
@@ -25,7 +27,8 @@ namespace Insurance.Services.Test
                 .Options;
 
             _productApiMock = new Mock<IProductApiClient>();
-            var insuranceDbContext = new InsuranceDbContext(options);
+            _insuranceDbContext = new InsuranceDbContext(options);
+            _insuranceDbContext.Database.EnsureDeleted();
             
             var rangeRulesTestData = new List<InsuranceRangeRule>
             {
@@ -39,11 +42,11 @@ namespace Insurance.Services.Test
                 new InsuranceProductTypeRule { ProductTypeId = 2000, InsuranceCost = 1000, Type = InsuranceProductTypeRuleType.AppliesToOrder }
             };
             
-            insuranceDbContext.InsuranceRangeRules.AddRange(rangeRulesTestData);
-            insuranceDbContext.InsuranceProductTypeRules.AddRange(productTypeRulesTestData);
-            insuranceDbContext.SaveChanges();
+            _insuranceDbContext.InsuranceRangeRules.AddRange(rangeRulesTestData);
+            _insuranceDbContext.InsuranceProductTypeRules.AddRange(productTypeRulesTestData);
+            _insuranceDbContext.SaveChanges();
             
-            _sut = new InsuranceCalculatorService(_productApiMock.Object, insuranceDbContext);
+            _sut = new InsuranceCalculatorService(_productApiMock.Object, _insuranceDbContext);
         }
 
         [Test]
@@ -127,7 +130,7 @@ namespace Insurance.Services.Test
             //Arrange
             const decimal expectedInsuranceCost = 0;
             
-            var orderDto = new OrderDto(new List<OrderItemDto>
+            var orderDto = new CalculateOrderInsuranceRequest(new List<OrderItemDto>
             {
                 new OrderItemDto(1,1),
                 new OrderItemDto(2,2),
@@ -154,7 +157,7 @@ namespace Insurance.Services.Test
             //Arrange
             const decimal expectedInsuranceCost = 1000;
             
-            var orderDto = new OrderDto(new List<OrderItemDto>
+            var orderDto = new CalculateOrderInsuranceRequest(new List<OrderItemDto>
             {
                 new OrderItemDto(1,1),
                 new OrderItemDto(2,2),
@@ -181,7 +184,7 @@ namespace Insurance.Services.Test
            //Arrange
             const decimal expectedInsuranceCost = 23000;
             
-            var orderDto = new OrderDto(new List<OrderItemDto>
+            var orderDto = new CalculateOrderInsuranceRequest(new List<OrderItemDto>
             {
                 new OrderItemDto(1,1),
                 new OrderItemDto(2,2),
@@ -206,6 +209,54 @@ namespace Insurance.Services.Test
 
             //Assert
             insuranceCost.Should().Be(expectedInsuranceCost);
+        }
+        
+        [Test]
+        public async Task SaveSurchargeRate_GivenASurchargeRateForAProductType_WhenThereIsNoData_ThenShouldInsert()
+        {
+            //Arrange
+            const int productTypeId = 1;
+            const decimal expectedCost = 2000;
+        
+            //Act
+            await _sut.SaveSurchargeRateAsync(new SaveSurchargeRateRequest(productTypeId, expectedCost));
+            
+            //Assert
+            var typeRule = await _insuranceDbContext
+                .InsuranceProductTypeRules
+                .SingleAsync(rule => rule.ProductTypeId == productTypeId
+                                     && rule.Type == InsuranceProductTypeRuleType.AppliesToProduct);
+        
+            typeRule.InsuranceCost.Should().Be(expectedCost);
+        }
+        
+        [Test]
+        public async Task SaveSurchargeRate_GivenASurchargeRateForAProductType_WhenThereIsExistingData_ThenShouldUpdate()
+        {
+            //Arrange
+            const int productTypeId = 1;
+            const decimal initialCost = 1000;
+            const decimal expectedCost = 2000;
+        
+            _insuranceDbContext.InsuranceProductTypeRules.Add(new InsuranceProductTypeRule
+            {
+                ProductTypeId = productTypeId,
+                Type = InsuranceProductTypeRuleType.AppliesToProduct,
+                InsuranceCost = initialCost
+            });
+            
+            await _insuranceDbContext.SaveChangesAsync(); 
+        
+            //Act
+            await _sut.SaveSurchargeRateAsync(new SaveSurchargeRateRequest(productTypeId, expectedCost));
+            
+            //Assert
+            var typeRule = await _insuranceDbContext
+                .InsuranceProductTypeRules
+                .SingleAsync(rule => rule.ProductTypeId == productTypeId
+                                     && rule.Type == InsuranceProductTypeRuleType.AppliesToProduct);
+        
+            typeRule.InsuranceCost.Should().Be(expectedCost);
         }
     }
 }

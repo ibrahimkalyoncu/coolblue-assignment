@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using Insurance.Domain;
 using Insurance.Domain.Models;
 using Insurance.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -39,10 +40,18 @@ namespace Insurance.Api.Controllers
 
         [HttpPost]
         [Route("order")]
-        public async Task<InsuranceCostDto> CalculateOrderInsurance([FromBody]OrderDto orderDto)
+        public async Task<InsuranceCostDto> CalculateOrderInsurance([FromBody]CalculateOrderInsuranceRequest calculateOrderInsuranceRequest)
         {
-            var insuranceCost = await _insuranceCalculatorService.CalculateOrderInsuranceAsync(orderDto);
+            var insuranceCost = await _insuranceCalculatorService.CalculateOrderInsuranceAsync(calculateOrderInsuranceRequest);
             return new InsuranceCostDto(insuranceCost);        
+        }
+        
+        [HttpPut]
+        [Route("surcharge")]
+        public async Task<IActionResult> SaveSurchargeRate([FromBody]SaveSurchargeRateRequest saveSurchargeRateRequest)
+        {
+            await _insuranceCalculatorService.SaveSurchargeRateAsync(saveSurchargeRateRequest);
+            return Ok();
         }
     }
 }

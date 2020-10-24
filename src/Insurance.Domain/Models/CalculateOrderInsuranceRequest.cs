@@ -3,11 +3,11 @@ using System.Collections.Immutable;
 
 namespace Insurance.Domain.Models
 {
-    public class OrderDto
+    public class CalculateOrderInsuranceRequest
     {
         private readonly List<OrderItemDto> _items;
 
-        public OrderDto(List<OrderItemDto> items)
+        public CalculateOrderInsuranceRequest(List<OrderItemDto> items)
         {
             _items = items;
         }
