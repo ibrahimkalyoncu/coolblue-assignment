@@ -31,10 +31,11 @@ namespace Insurance.Api
 
         private static void ConfigureLogging()
         {
+            Console.WriteLine("Configuring Serilog...");
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{environment}.json",optional: true)
+                .AddEnvironmentVariables()
                 .Build();
 
             Log.Logger = new LoggerConfiguration()
@@ -46,14 +47,20 @@ namespace Insurance.Api
                 .Enrich.WithProperty("Environment", environment)
                 .ReadFrom.Configuration(configuration)
                 .CreateLogger();
+
+            Console.WriteLine("Configured Serilog");
         }
 
         private static ElasticsearchSinkOptions ConfigureElasticSink(IConfigurationRoot configuration, string environment)
         {
-            return new ElasticsearchSinkOptions(new Uri(configuration["ElasticConfiguration:Uri"]))
+            var elasticsearchUri = configuration["Elasticsearch"];
+
+            Console.WriteLine($"Configuring Serilog Elasticsearch ({elasticsearchUri})...");
+            
+            return new ElasticsearchSinkOptions(new Uri(elasticsearchUri))
             {
                 AutoRegisterTemplate = true,
-                IndexFormat = $"{Assembly.GetExecutingAssembly().GetName().Name.ToLower().Replace(".", "-")}-{environment?.ToLower().Replace(".", "-")}-{DateTime.UtcNow:yyyy-MM}"
+                IndexFormat = $"insurance-{environment?.ToLower()}-{DateTime.UtcNow:yyyy-MM}"
             };
         }
 
