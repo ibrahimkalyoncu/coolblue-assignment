@@ -7,6 +7,7 @@ docker-compose up -d
 ECHO Waiting sql server
 timeout 30
 dotnet ef database update -s src/Insurance.Api -p src/Insurance.Data
+start "" http://localhost:5601/
 start "" http://localhost:5002/swagger
 start "" http://localhost:5001/swagger
 ECHO Done.
